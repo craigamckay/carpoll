@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Car Poll</title>
+  <style>
+    /* ── CONFIG: paste your Supabase URL + anon key into the script below ── */
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0e0e0e;
+      --surface:   #181818;
+      --surface2:  #222222;
+      --border:    rgba(255,255,255,0.08);
+      --border2:   rgba(255,255,255,0.16);
+      --text:      #f0ede6;
+      --muted:     #888;
+      --accent:    #e8d06a;
+      --accent-bg: rgba(232,208,106,0.10);
+      --green:     #4ecb8d;
+      --green-bg:  rgba(78,203,141,0.10);
+      --radius:    10px;
+      --radius-lg: 16px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Georgia', serif;
+      min-height: 100vh;
+      padding: 0 16px 60px;
+    }
+
+    header {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 48px 0 32px;
+      border-bottom: 0.5px solid var(--border);
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: clamp(28px, 6vw, 44px);
+      font-weight: normal;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    header h1 span { color: var(--accent); }
+
+    header p {
+      margin-top: 8px;
+      font-size: 15px;
+      color: var(--muted);
+      font-family: 'Courier New', monospace;
+    }
+
+    .container { max-width: 640px; margin: 0 auto; }
+
+    /* ── ADD FORM ── */
+    .add-form {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 32px;
+    }
+
+    .add-form label {
+      display: block;
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .input-row input {
+      flex: 1;
+      min-width: 140px;
+      background: var(--surface2);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Georgia', serif;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .input-row input:focus { border-color: var(--accent); }
+    .input-row input::placeholder { color: var(--muted); }
+
+    .btn-add {
+      background: var(--accent);
+      color: #111;
+      border: none;
+      border-radius: var(--radius);
+      padding: 10px 20px;
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn-add:hover { opacity: 0.88; }
+    .btn-add:active { transform: scale(0.97); }
+    .btn-add:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── STATS ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .stat {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+
+    .stat .val {
+      font-size: 26px;
+      font-weight: normal;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat .lbl {
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      color: var(--muted);
+      margin-top: 4px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* ── LIST ── */
+    .section-label {
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .cars-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .car-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.2s;
+      animation: slideIn 0.25s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .car-card.voted { border-color: rgba(78,203,141,0.4); }
+
+    .rank {
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      color: var(--muted);
+      min-width: 22px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .rank.top { font-size: 18px; }
+
+    .vote-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      background: var(--surface2);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      cursor: pointer;
+      color: var(--muted);
+      min-width: 50px;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .vote-btn:hover { border-color: var(--green); color: var(--green); }
+
+    .vote-btn.active {
+      background: var(--green-bg);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .vote-btn .count {
+      font-size: 20px;
+      font-weight: normal;
+      line-height: 1;
+    }
+
+    .vote-btn .lbl {
+      font-size: 10px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .car-info { flex: 1; min-width: 0; }
+
+    .car-name {
+      font-size: 16px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .car-meta {
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .bar-wrap {
+      margin-top: 7px;
+      height: 3px;
+      background: var(--surface2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      background: var(--green);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    /* ── EMPTY / LOADING ── */
+    .empty {
+      text-align: center;
+      padding: 48px 0;
+      color: var(--muted);
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      z-index: 999;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── SETUP BANNER ── */
+    .setup-banner {
+      background: rgba(232,208,106,0.08);
+      border: 1px solid rgba(232,208,106,0.3);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--accent);
+    }
+
+    .setup-banner strong { color: var(--accent); }
+
+    @media (max-width: 480px) {
+      .stats { grid-template-columns: repeat(3, 1fr); }
+      .stat .val { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>The <span>Car</span> Poll</h1>
+  <p>add yours · vote · settle it.</p>
+</header>
+
+<div class="container">
+
+  <div class="setup-banner" id="setupBanner" style="display:none;">
+    ⚠ Supabase not configured — edit the SUPABASE_URL and SUPABASE_KEY at the top of the &lt;script&gt; in index.html, then redeploy.
+  </div>
+
+  <div class="add-form">
+    <label>Nominate a car</label>
+    <div class="input-row">
+      <input id="carInput" type="text" placeholder="e.g. Porsche 911 GT3" autocomplete="off" />
+      <input id="nameInput" type="text" placeholder="Your name" style="max-width:160px;" autocomplete="off" />
+      <button class="btn-add" id="addBtn" onclick="addCar()">Add</button>
+    </div>
+  </div>
+
+  <div class="stats" id="statsRow" style="display:none;">
+    <div class="stat"><div class="val" id="statCars">0</div><div class="lbl">Cars</div></div>
+    <div class="stat"><div class="val" id="statVotes">0</div><div class="lbl">Votes</div></div>
+    <div class="stat"><div class="val" id="statMine">0</div><div class="lbl">Yours</div></div>
+  </div>
+
+  <div class="section-label" id="listLabel" style="display:none;">Leaderboard</div>
+  <div class="cars-list" id="carsList"></div>
+  <div class="empty" id="emptyState">No cars yet — nominate the first one above.</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─────────────────────────────────────────────
+  //  STEP 1: Paste your Supabase credentials here
+  // ─────────────────────────────────────────────
+  const SUPABASE_URL = 'https://dozgzagwhyzjzgqgkuoi.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_QMVhTE4NWtTnl-uqef9skA_E8_euqp0';
+  // ─────────────────────────────────────────────
+
+  const VOTES_KEY = 'car_poll_my_votes';
+
+  // ── Supabase REST helpers ──
+  async function sbFetch(path, opts = {}) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': opts.prefer || 'return=representation',
+        ...(opts.headers || {})
+      },
+      ...opts
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  }
+
+  const db = {
+    getCars: () => sbFetch('cars?order=votes.desc,created_at.asc&select=*'),
+    addCar: (name, added_by) => sbFetch('cars', {
+      method: 'POST',
+      body: JSON.stringify({ name, added_by, votes: 0 }),
+      prefer: 'return=representation'
+    }),
+    incrementVote: (id) => sbFetch(`cars?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({}),
+      headers: { 'X-Custom-Vote': '1' },
+      prefer: 'return=representation'
+    }),
+    rpc: (fn, params) => sbFetch(`rpc/${fn}`, {
+      method: 'POST',
+      body: JSON.stringify(params),
+      prefer: ''
+    })
+  };
+
+  // ── Local vote tracking ──
+  function getMyVotes() {
+    try { return new Set(JSON.parse(localStorage.getItem(VOTES_KEY) || '[]')); }
+    catch { return new Set(); }
+  }
+  function saveMyVotes(set) {
+    localStorage.setItem(VOTES_KEY, JSON.stringify([...set]));
+  }
+
+  let cars = [];
+  let myVotes = getMyVotes();
+  let polling = null;
+
+  // ── Init ──
+  async function init() {
+    if (SUPABASE_URL === 'SUPABASE_URL') {
+      document.getElementById('setupBanner').style.display = '';
+      document.getElementById('emptyState').textContent = 'Configure Supabase to get started.';
+      return;
+    }
+    await loadCars();
+    // Poll for updates every 8 seconds
+    polling = setInterval(loadCars, 8000);
+  }
+
+  async function loadCars() {
+    try {
+      cars = await db.getCars();
+      render();
+    } catch(e) {
+      console.error('Load error:', e);
+    }
+  }
+
+  // ── Add car ──
+  async function addCar() {
+    const carEl = document.getElementById('carInput');
+    const nameEl = document.getElementById('nameInput');
+    const name = carEl.value.trim();
+    const added_by = nameEl.value.trim() || 'Anonymous';
+    if (!name) { carEl.focus(); return; }
+
+    const btn = document.getElementById('addBtn');
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+      await db.addCar(name, added_by);
+      carEl.value = '';
+      showToast(`"${name}" added!`);
+      carEl.focus();
+      await loadCars();
+    } catch(e) {
+      showToast('Error adding car — try again');
+      console.error(e);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Add';
+    }
+  }
+
+  // ── Vote ──
+  async function vote(id) {
+    const car = cars.find(c => c.id === id);
+    if (!car) return;
+
+    const voted = myVotes.has(id);
+    // Optimistic update
+    car.votes = Math.max(0, car.votes + (voted ? -1 : 1));
+    if (voted) { myVotes.delete(id); } else { myVotes.add(id); }
+    saveMyVotes(myVotes);
+    render();
+
+    try {
+      await db.rpc(voted ? 'decrement_votes' : 'increment_votes', { row_id: id });
+    } catch(e) {
+      // Roll back
+      car.votes = Math.max(0, car.votes + (voted ? 1 : -1));
+      if (voted) { myVotes.add(id); } else { myVotes.delete(id); }
+      saveMyVotes(myVotes);
+      render();
+      showToast('Vote failed — try again');
+    }
+  }
+
+  // ── Render ──
+  function render() {
+    const sorted = [...cars].sort((a, b) => b.votes - a.votes || a.id - b.id);
+    const maxVotes = sorted.length ? sorted[0].votes : 0;
+    const totalVotes = cars.reduce((s, c) => s + c.votes, 0);
+
+    const statsRow   = document.getElementById('statsRow');
+    const listLabel  = document.getElementById('listLabel');
+    const emptyState = document.getElementById('emptyState');
+    const list       = document.getElementById('carsList');
+
+    if (cars.length === 0) {
+      statsRow.style.display  = 'none';
+      listLabel.style.display = 'none';
+      emptyState.style.display = '';
+      list.innerHTML = '';
+      return;
+    }
+
+    emptyState.style.display = 'none';
+    statsRow.style.display   = 'grid';
+    listLabel.style.display  = '';
+
+    document.getElementById('statCars').textContent  = cars.length;
+    document.getElementById('statVotes').textContent = totalVotes;
+    document.getElementById('statMine').textContent  = myVotes.size;
+
+    const medals = ['🥇','🥈','🥉'];
+    list.innerHTML = sorted.map((car, i) => {
+      const voted = myVotes.has(car.id);
+      const pct   = maxVotes > 0 ? (car.votes / maxVotes * 100).toFixed(1) : 0;
+      const rank  = i < 3
+        ? `<span class="rank top">${medals[i]}</span>`
+        : `<span class="rank">${i + 1}</span>`;
+      return `
+        <div class="car-card${voted ? ' voted' : ''}">
+          ${rank}
+          <button class="vote-btn${voted ? ' active' : ''}" onclick="vote(${car.id})">
+            <span class="count">${car.votes}</span>
+            <span class="lbl">${voted ? 'voted' : 'vote'}</span>
+          </button>
+          <div class="car-info">
+            <div class="car-name">${esc(car.name)}</div>
+            <div class="car-meta">by ${esc(car.added_by)}</div>
+            <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ── Keyboard shortcut ──
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const active = document.activeElement;
+      if (active.id === 'carInput' || active.id === 'nameInput') addCar();
+    }
+  });
+
+  init();
+</script>
+</body>
+</html>
