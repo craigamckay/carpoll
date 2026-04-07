@@ -462,10 +462,11 @@
       method: 'POST',
       body: JSON.stringify({ name, added_by, votes: 0, weblink: weblink || null }),
     }),
-    updateCar: (id, name, weblink) => sbFetch(`cars?id=eq.$Number{id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ name, weblink: weblink || null }),
-    }),
+    updateCar: (id, name, weblink) =>
+      sbFetch(`cars?id=eq.${Number(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name, weblink: weblink || null }),
+      }),
     rpc: (fn, params) => sbFetch(`rpc/${fn}`, {
       method: 'POST',
       body: JSON.stringify(params),
