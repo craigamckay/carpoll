@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Car Poll</title>
   <style>
-    /* ── CONFIG: paste your Supabase URL + anon key into the script below ── */
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -136,21 +134,8 @@
       padding: 14px 16px;
     }
 
-    .stat .val {
-      font-size: 26px;
-      font-weight: normal;
-      color: var(--text);
-      line-height: 1;
-    }
-
-    .stat .lbl {
-      font-size: 11px;
-      font-family: 'Courier New', monospace;
-      color: var(--muted);
-      margin-top: 4px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
+    .stat .val { font-size: 26px; font-weight: normal; color: var(--text); line-height: 1; }
+    .stat .lbl { font-size: 11px; font-family: 'Courier New', monospace; color: var(--muted); margin-top: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
 
     /* ── LIST ── */
     .section-label {
@@ -183,15 +168,7 @@
 
     .car-card.voted { border-color: rgba(78,203,141,0.4); }
 
-    .rank {
-      font-size: 12px;
-      font-family: 'Courier New', monospace;
-      color: var(--muted);
-      min-width: 22px;
-      text-align: center;
-      flex-shrink: 0;
-    }
-
+    .rank { font-size: 12px; font-family: 'Courier New', monospace; color: var(--muted); min-width: 22px; text-align: center; flex-shrink: 0; }
     .rank.top { font-size: 18px; }
 
     .vote-btn {
@@ -211,68 +188,155 @@
     }
 
     .vote-btn:hover { border-color: var(--green); color: var(--green); }
+    .vote-btn.active { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+    .vote-btn .count { font-size: 20px; font-weight: normal; line-height: 1; }
+    .vote-btn .lbl { font-size: 10px; font-family: 'Courier New', monospace; letter-spacing: 0.06em; text-transform: uppercase; }
 
-    .vote-btn.active {
-      background: var(--green-bg);
-      border-color: var(--green);
-      color: var(--green);
-    }
+    .car-info { flex: 1; min-width: 0; cursor: pointer; }
+    .car-info:hover .car-name { color: var(--accent); }
 
-    .vote-btn .count {
-      font-size: 20px;
-      font-weight: normal;
-      line-height: 1;
-    }
+    .car-name { font-size: 16px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.15s; }
 
-    .vote-btn .lbl {
-      font-size: 10px;
+    .car-meta { font-size: 12px; font-family: 'Courier New', monospace; color: var(--muted); margin-top: 4px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    .car-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 11px;
       font-family: 'Courier New', monospace;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    .car-info { flex: 1; min-width: 0; }
-
-    .car-name {
-      font-size: 16px;
-      color: var(--text);
+      opacity: 0.8;
+      transition: opacity 0.15s;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      max-width: 200px;
+      display: inline-block;
     }
+    .car-link:hover { opacity: 1; }
 
-    .car-meta {
-      font-size: 12px;
+    .edit-hint {
+      font-size: 10px;
       font-family: 'Courier New', monospace;
       color: var(--muted);
-      margin-top: 4px;
+      opacity: 0;
+      transition: opacity 0.15s;
+      letter-spacing: 0.04em;
+    }
+    .car-info:hover .edit-hint { opacity: 1; }
+
+    .bar-wrap { margin-top: 7px; height: 3px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+    .bar { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.4s ease; }
+
+    /* ── MODAL OVERLAY ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
     }
 
-    .bar-wrap {
-      margin-top: 7px;
-      height: 3px;
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      width: 100%;
+      max-width: 440px;
+      transform: translateY(8px);
+      transition: transform 0.2s;
+    }
+
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal h2 {
+      font-size: 14px;
+      font-weight: normal;
+      font-family: 'Courier New', monospace;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .modal-field { margin-bottom: 14px; }
+
+    .modal-field label {
+      display: block;
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .modal-field input {
+      width: 100%;
       background: var(--surface2);
-      border-radius: 2px;
-      overflow: hidden;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Georgia', serif;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.15s;
     }
 
-    .bar {
-      height: 100%;
-      background: var(--green);
-      border-radius: 2px;
-      transition: width 0.4s ease;
+    .modal-field input:focus { border-color: var(--accent); }
+    .modal-field input::placeholder { color: var(--muted); }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      justify-content: flex-end;
     }
 
-    /* ── EMPTY / LOADING ── */
-    .empty {
-      text-align: center;
-      padding: 48px 0;
+    .btn-cancel {
+      background: transparent;
       color: var(--muted);
-      font-family: 'Courier New', monospace;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 9px 18px;
       font-size: 13px;
+      font-family: 'Courier New', monospace;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
     }
+    .btn-cancel:hover { color: var(--text); border-color: var(--border); }
 
-    /* ── TOAST ── */
+    .btn-save {
+      background: var(--accent);
+      color: #111;
+      border: none;
+      border-radius: var(--radius);
+      padding: 9px 22px;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: opacity 0.15s;
+    }
+    .btn-save:hover { opacity: 0.88; }
+    .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── EMPTY / TOAST ── */
+    .empty { text-align: center; padding: 48px 0; color: var(--muted); font-family: 'Courier New', monospace; font-size: 13px; }
+
     .toast {
       position: fixed;
       bottom: 24px;
@@ -291,13 +355,8 @@
       z-index: 999;
       white-space: nowrap;
     }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    /* ── SETUP BANNER ── */
     .setup-banner {
       background: rgba(232,208,106,0.08);
       border: 1px solid rgba(232,208,106,0.3);
@@ -310,10 +369,7 @@
       color: var(--accent);
     }
 
-    .setup-banner strong { color: var(--accent); }
-
     @media (max-width: 480px) {
-      .stats { grid-template-columns: repeat(3, 1fr); }
       .stat .val { font-size: 20px; }
     }
   </style>
@@ -328,14 +384,15 @@
 <div class="container">
 
   <div class="setup-banner" id="setupBanner" style="display:none;">
-    ⚠ Supabase not configured — edit the SUPABASE_URL and SUPABASE_KEY at the top of the &lt;script&gt; in index.html, then redeploy.
+    ⚠ Supabase not configured — edit SUPABASE_URL and SUPABASE_KEY in the script, then redeploy.
   </div>
 
   <div class="add-form">
     <label>Nominate a car</label>
     <div class="input-row">
-      <input id="carInput" type="text" placeholder="e.g. Porsche 911 GT3" autocomplete="off" />
-      <input id="nameInput" type="text" placeholder="Your name" style="max-width:160px;" autocomplete="off" />
+      <input id="carInput"  type="text" placeholder="e.g. Porsche 911 GT3" autocomplete="off" />
+      <input id="nameInput" type="text" placeholder="Your name" style="max-width:150px;" autocomplete="off" />
+      <input id="linkInput" type="url"  placeholder="Link (optional)" style="max-width:180px;" autocomplete="off" />
       <button class="btn-add" id="addBtn" onclick="addCar()">Add</button>
     </div>
   </div>
@@ -352,11 +409,30 @@
 
 </div>
 
+<!-- Edit modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <h2>Edit entry</h2>
+    <div class="modal-field">
+      <label>Car name</label>
+      <input id="editName" type="text" placeholder="e.g. Porsche 911 GT3" autocomplete="off" />
+    </div>
+    <div class="modal-field">
+      <label>Web link</label>
+      <input id="editLink" type="url" placeholder="https://..." autocomplete="off" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" id="saveBtn" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
   // ─────────────────────────────────────────────
-  //  STEP 1: Paste your Supabase credentials here
+  //  Paste your Supabase credentials here
   // ─────────────────────────────────────────────
   const SUPABASE_URL = 'https://dozgzagwhyzjzgqgkuoi.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_QMVhTE4NWtTnl-uqef9skA_E8_euqp0';
@@ -364,14 +440,13 @@
 
   const VOTES_KEY = 'car_poll_my_votes';
 
-  // ── Supabase REST helpers ──
   async function sbFetch(path, opts = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
       headers: {
-        'apikey': SUPABASE_KEY,
+        'apikey': SUPABASE_URL === 'YOUR_SUPABASE_URL' ? '' : SUPABASE_KEY,
         'Authorization': `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json',
-        'Prefer': opts.prefer || 'return=representation',
+        'Prefer': opts.prefer !== undefined ? opts.prefer : 'return=representation',
         ...(opts.headers || {})
       },
       ...opts
@@ -382,17 +457,14 @@
   }
 
   const db = {
-    getCars: () => sbFetch('cars?order=votes.desc,created_at.asc&select=*'),
-    addCar: (name, added_by) => sbFetch('cars', {
+    getCars:  () => sbFetch('cars?order=votes.desc,created_at.asc&select=*'),
+    addCar:   (name, added_by, weblink) => sbFetch('cars', {
       method: 'POST',
-      body: JSON.stringify({ name, added_by, votes: 0 }),
-      prefer: 'return=representation'
+      body: JSON.stringify({ name, added_by, votes: 0, weblink: weblink || null }),
     }),
-    incrementVote: (id) => sbFetch(`cars?id=eq.${id}`, {
+    updateCar: (id, name, weblink) => sbFetch(`cars?id=eq.${id}`, {
       method: 'PATCH',
-      body: JSON.stringify({}),
-      headers: { 'X-Custom-Vote': '1' },
-      prefer: 'return=representation'
+      body: JSON.stringify({ name, weblink: weblink || null }),
     }),
     rpc: (fn, params) => sbFetch(`rpc/${fn}`, {
       method: 'POST',
@@ -401,55 +473,46 @@
     })
   };
 
-  // ── Local vote tracking ──
   function getMyVotes() {
     try { return new Set(JSON.parse(localStorage.getItem(VOTES_KEY) || '[]')); }
     catch { return new Set(); }
   }
-  function saveMyVotes(set) {
-    localStorage.setItem(VOTES_KEY, JSON.stringify([...set]));
-  }
+  function saveMyVotes(set) { localStorage.setItem(VOTES_KEY, JSON.stringify([...set])); }
 
   let cars = [];
   let myVotes = getMyVotes();
-  let polling = null;
+  let editingId = null;
 
-  // ── Init ──
   async function init() {
-    if (SUPABASE_URL === 'SUPABASE_URL') {
+    if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
       document.getElementById('setupBanner').style.display = '';
       document.getElementById('emptyState').textContent = 'Configure Supabase to get started.';
       return;
     }
     await loadCars();
-    // Poll for updates every 8 seconds
-    polling = setInterval(loadCars, 8000);
+    setInterval(loadCars, 8000);
   }
 
   async function loadCars() {
-    try {
-      cars = await db.getCars();
-      render();
-    } catch(e) {
-      console.error('Load error:', e);
-    }
+    try { cars = await db.getCars(); render(); }
+    catch(e) { console.error('Load error:', e); }
   }
 
-  // ── Add car ──
   async function addCar() {
-    const carEl = document.getElementById('carInput');
+    const carEl  = document.getElementById('carInput');
     const nameEl = document.getElementById('nameInput');
-    const name = carEl.value.trim();
+    const linkEl = document.getElementById('linkInput');
+    const name     = carEl.value.trim();
     const added_by = nameEl.value.trim() || 'Anonymous';
+    const weblink  = linkEl.value.trim();
     if (!name) { carEl.focus(); return; }
 
     const btn = document.getElementById('addBtn');
-    btn.disabled = true;
-    btn.textContent = '...';
+    btn.disabled = true; btn.textContent = '...';
 
     try {
-      await db.addCar(name, added_by);
-      carEl.value = '';
+      await db.addCar(name, added_by, weblink);
+      carEl.value = ''; linkEl.value = '';
       showToast(`"${name}" added!`);
       carEl.focus();
       await loadCars();
@@ -457,27 +520,21 @@
       showToast('Error adding car — try again');
       console.error(e);
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Add';
+      btn.disabled = false; btn.textContent = 'Add';
     }
   }
 
-  // ── Vote ──
   async function vote(id) {
     const car = cars.find(c => c.id === id);
     if (!car) return;
-
     const voted = myVotes.has(id);
-    // Optimistic update
     car.votes = Math.max(0, car.votes + (voted ? -1 : 1));
     if (voted) { myVotes.delete(id); } else { myVotes.add(id); }
     saveMyVotes(myVotes);
     render();
-
     try {
       await db.rpc(voted ? 'decrement_votes' : 'increment_votes', { row_id: id });
     } catch(e) {
-      // Roll back
       car.votes = Math.max(0, car.votes + (voted ? 1 : -1));
       if (voted) { myVotes.add(id); } else { myVotes.delete(id); }
       saveMyVotes(myVotes);
@@ -486,10 +543,52 @@
     }
   }
 
+  // ── Edit modal ──
+  function openEdit(id) {
+    const car = cars.find(c => c.id === id);
+    if (!car) return;
+    editingId = id;
+    document.getElementById('editName').value = car.name || '';
+    document.getElementById('editLink').value = car.weblink || '';
+    document.getElementById('modalOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('editName').focus(), 50);
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    editingId = null;
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+
+  async function saveEdit() {
+    if (!editingId) return;
+    const name    = document.getElementById('editName').value.trim();
+    const weblink = document.getElementById('editLink').value.trim();
+    if (!name) { document.getElementById('editName').focus(); return; }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    try {
+      await db.updateCar(editingId, name, weblink);
+      closeModal();
+      showToast('Updated!');
+      await loadCars();
+    } catch(e) {
+      showToast('Save failed — try again');
+      console.error(e);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save';
+    }
+  }
+
   // ── Render ──
   function render() {
-    const sorted = [...cars].sort((a, b) => b.votes - a.votes || a.id - b.id);
-    const maxVotes = sorted.length ? sorted[0].votes : 0;
+    const sorted    = [...cars].sort((a, b) => b.votes - a.votes || a.id - b.id);
+    const maxVotes  = sorted.length ? sorted[0].votes : 0;
     const totalVotes = cars.reduce((s, c) => s + c.votes, 0);
 
     const statsRow   = document.getElementById('statsRow');
@@ -498,11 +597,8 @@
     const list       = document.getElementById('carsList');
 
     if (cars.length === 0) {
-      statsRow.style.display  = 'none';
-      listLabel.style.display = 'none';
-      emptyState.style.display = '';
-      list.innerHTML = '';
-      return;
+      statsRow.style.display = 'none'; listLabel.style.display = 'none';
+      emptyState.style.display = ''; list.innerHTML = ''; return;
     }
 
     emptyState.style.display = 'none';
@@ -520,6 +616,11 @@
       const rank  = i < 3
         ? `<span class="rank top">${medals[i]}</span>`
         : `<span class="rank">${i + 1}</span>`;
+
+      const linkHtml = car.weblink
+        ? `<a class="car-link" href="${esc(car.weblink)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">&#x2197; ${esc(shortUrl(car.weblink))}</a>`
+        : '';
+
       return `
         <div class="car-card${voted ? ' voted' : ''}">
           ${rank}
@@ -527,13 +628,22 @@
             <span class="count">${car.votes}</span>
             <span class="lbl">${voted ? 'voted' : 'vote'}</span>
           </button>
-          <div class="car-info">
+          <div class="car-info" onclick="openEdit(${car.id})">
             <div class="car-name">${esc(car.name)}</div>
-            <div class="car-meta">by ${esc(car.added_by)}</div>
+            <div class="car-meta">
+              <span>by ${esc(car.added_by)}</span>
+              ${linkHtml}
+              <span class="edit-hint">click to edit</span>
+            </div>
             <div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>
           </div>
         </div>`;
     }).join('');
+  }
+
+  function shortUrl(url) {
+    try { return new URL(url).hostname.replace(/^www\./, ''); }
+    catch { return url.slice(0, 30); }
   }
 
   function esc(s) {
@@ -550,11 +660,12 @@
     t._t = setTimeout(() => t.classList.remove('show'), 2200);
   }
 
-  // ── Keyboard shortcut ──
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
     if (e.key === 'Enter') {
       const active = document.activeElement;
-      if (active.id === 'carInput' || active.id === 'nameInput') addCar();
+      if (active.id === 'carInput' || active.id === 'nameInput' || active.id === 'linkInput') addCar();
+      if (active.id === 'editName' || active.id === 'editLink') saveEdit();
     }
   });
 
